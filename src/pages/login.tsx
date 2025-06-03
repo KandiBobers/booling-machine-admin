@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/router';
 import { login } from '../api/auth';
 
 interface LoginPageProps {
+  isLoggedIn: boolean;
   onLogin: (username: string, password: string) => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ isLoggedIn, onLogin }) => {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  React.useEffect(() => {
+    if (isLoggedIn) {
+      router.push('/');
+    }
+  }, [isLoggedIn, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,10 +25,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const success = await login(username, password);
     if (success) {
       onLogin(username, password);
+      router.push('/');
     } else {
       setError('Неверный логин или пароль');
     }
   };
+
+  if (isLoggedIn) return null;
 
   return (
     <div className="login-container">

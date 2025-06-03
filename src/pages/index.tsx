@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { getBookings, cancelBooking, editBooking } from '../api/bookings';
+import { useRouter } from 'next/router';
+import { getBookings, cancelBooking } from '../api/bookings';
 import { Booking } from '../types/booking';
 import EditBookingModal from '../components/EditBookingModal';
 
 interface MyBookingsPageProps {
-  username: string;
-  password: string;
+  isLoggedIn: boolean;
+  authData: { username: string; password: string };
 }
 
-const MyBookingsPage: React.FC<MyBookingsPageProps> = ({ username, password }) => {
+const MyBookingsPage: React.FC<MyBookingsPageProps> = ({ 
+  isLoggedIn, 
+  authData: { username, password } 
+}) => {
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,6 +21,14 @@ const MyBookingsPage: React.FC<MyBookingsPageProps> = ({ username, password }) =
   const [notification, setNotification] = useState<{message: string; isSuccess: boolean} | null>(null);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      router.push('/login');
+    }
+  }, [isLoggedIn, router]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
     const fetchBookings = async () => {
       try {
         const data = await getBookings(username, password);
@@ -29,7 +42,7 @@ const MyBookingsPage: React.FC<MyBookingsPageProps> = ({ username, password }) =
     };
 
     fetchBookings();
-  }, [username, password]);
+  }, [isLoggedIn, username, password]);
 
   const handleCancel = async (roomId: number, date: string) => {
     try {
@@ -48,7 +61,6 @@ const MyBookingsPage: React.FC<MyBookingsPageProps> = ({ username, password }) =
   const handleEditComplete = (success: boolean, message: string) => {
     if (success) {
       setEditingBooking(null);
-      // Обновляем список бронирований
       getBookings(username, password).then(data => setBookings(data));
     }
     showNotification(message, success);
@@ -59,12 +71,13 @@ const MyBookingsPage: React.FC<MyBookingsPageProps> = ({ username, password }) =
     setTimeout(() => setNotification(null), 3000);
   };
 
+  if (!isLoggedIn) return null;
   if (loading) return <div>Загрузка...</div>;
   if (error) return <div>{error}</div>;
 
   return (
     <div className="my-bookings-page">
-      <h1>Все бронирования</h1>
+      <h1>Бронирования</h1>
       
       {notification && (
         <div className={`notification ${notification.isSuccess ? 'success' : 'error'}`}>
